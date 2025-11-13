@@ -1,0 +1,45 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Set up Node
+      uses: actions/setup-node@v4
+      with:
+        node-version: 18
+
+    - name: Install dependencies
+      run: npm --prefix app ci
+
+    - name: Run tests
+      run: npm --prefix app test
+
+    - name: Build Docker image
+      run: |
+        docker build -t ${{ secrets.kartikmg }}/ci-cd-demo:${{ github.sha }} .
+        docker tag ${{ secrets.kartikmg }}/ci-cd-demo:${{ github.sha }} ${{ secrets.kartikmg }}/ci-cd-demo:latest
+
+    - name: Login to DockerHub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.kartikmg }}
+        password: ${{ secrets.dckr_pat_onrHGrUrySROKqKIhVysptMRcjI }}
+
+    - name: Push images to DockerHub
+      run: |
+        docker push ${{ secrets.kartikmg }}/ci-cd-demo:${{ github.sha }}
+        docker push ${{ secrets.kartikmg }}/ci-cd-demo:latest
+
+    - name: Deploy to Kubernetes (via kubectl)
+      uses: azure/setup-kubectl@v3
+      with:
+        version: 'v1.27.0'
+    # Optional: use K8s credentials or run a script that performs `kubectl set image` etc.
