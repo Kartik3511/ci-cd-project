@@ -19,8 +19,22 @@ jobs:
     - name: Install dependencies
       run: npm --prefix app ci
 
+    - name: Start app in background
+      run: |
+        npm --prefix app install
+        # start server in background
+        node app/index.js & 
+        # wait until server is ready on port 3000 (max 30s)
+        for i in {1..30}; do
+          if curl -sS http://localhost:3000 >/dev/null 2>&1; then
+            echo "server ready"; break
+          fi
+          sleep 1
+        done
+
     - name: Run tests
       run: npm --prefix app test
+
 
     - name: Build Docker image
       run: |
