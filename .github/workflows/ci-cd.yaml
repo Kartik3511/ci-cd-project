@@ -19,38 +19,24 @@ jobs:
     - name: Install dependencies
       run: npm --prefix app ci
 
-    - name: Start app in background
-      run: |
-        npm --prefix app install
-        # start server in background
-        node app/index.js & 
-        # wait until server is ready on port 3000 (max 30s)
-        for i in {1..30}; do
-          if curl -sS http://localhost:3000 >/dev/null 2>&1; then
-            echo "server ready"; break
-          fi
-          sleep 1
-        done
-
     - name: Run tests
       run: npm --prefix app test
 
-
     - name: Build Docker image
       run: |
-        docker build -t ${{ secrets.kartikmg }}/ci-cd-demo:${{ github.sha }} .
-        docker tag ${{ secrets.kartikmg }}/ci-cd-demo:${{ github.sha }} ${{ secrets.kartikmg }}/ci-cd-demo:latest
+        docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/ci-cd-demo:${{ github.sha }} .
+        docker tag ${{ secrets.DOCKERHUB_USERNAME }}/ci-cd-demo:${{ github.sha }} ${{ secrets.DOCKERHUB_USERNAME }}/ci-cd-demo:latest
 
     - name: Login to DockerHub
       uses: docker/login-action@v3
       with:
-        username: ${{ secrets.kartikmg }}
-        password: ${{ secrets.dckr_pat_onrHGrUrySROKqKIhVysptMRcjI }}
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
 
     - name: Push images to DockerHub
       run: |
-        docker push ${{ secrets.kartikmg }}/ci-cd-demo:${{ github.sha }}
-        docker push ${{ secrets.kartikmg }}/ci-cd-demo:latest
+        docker push ${{ secrets.DOCKERHUB_USERNAME }}/ci-cd-demo:${{ github.sha }}
+        docker push ${{ secrets.DOCKERHUB_USERNAME }}/ci-cd-demo:latest
 
     - name: Deploy to Kubernetes (via kubectl)
       uses: azure/setup-kubectl@v3
